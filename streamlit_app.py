@@ -54,4 +54,43 @@ else:
     # 세션 초기화
     # ---------------------------
     if "messages" not in st.session_state:
-        st.session_state.messages = [{]()_
+        st.session_state.messages = [{"role": "system", "content": system_prompt}]
+
+    # 대화 새로 시작 버튼
+    if st.button("🧹 대화 새로 시작하기"):
+        st.session_state.messages = [{"role": "system", "content": system_prompt}]
+        st.rerun()
+
+    # ---------------------------
+    # 이전 대화 표시
+    # ---------------------------
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # ---------------------------
+    # 사용자 입력
+    # ---------------------------
+    if prompt := st.chat_input(f"{user_level} 수준으로 궁금한 내용을 물어보세요!"):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # ---------------------------
+        # GPT 응답 생성
+        # ---------------------------
+        stream = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": m["role"], "content": m["content"]}
+                for m in st.session_state.messages
+            ],
+            stream=True,
+        )
+
+        # ---------------------------
+        # 응답 출력
+        # ---------------------------
+        with st.chat_message("assistant"):
+            response = st.write_stream(stream)
+        st.session_state.messages.append({"role": "assistant", "content": response})
