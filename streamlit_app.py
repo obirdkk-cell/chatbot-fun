@@ -1,56 +1,57 @@
 import streamlit as st
 from openai import OpenAI
 
-# Show title and description.
-st.title("💬 Chatbot")
-st.write(
-    "This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses. "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-    "You can also learn how to build this app step by step by [following our tutorial](https://docs.streamlit.io/develop/tutorials/llms/build-conversational-apps)."
-)
+# ---------------------------
+# 기본 페이지 설정
+# ---------------------------
+st.set_page_config(page_title="연령 맞춤형 AI 학습 도우미", page_icon="🎓", layout="wide")
+st.title("🎓 연령 맞춤형 AI 학습 도우미")
+st.caption("사용자 연령에 따라 난이도를 조절해 설명해주는 AI 선생님 챗봇입니다.")
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-openai_api_key = st.text_input("OpenAI API Key", type="password")
+# ---------------------------
+# API Key 입력
+# ---------------------------
+openai_api_key = st.text_input("🔑 OpenAI API Key를 입력하세요", type="password")
 if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
+    st.info("계속하려면 OpenAI API Key를 입력해주세요.", icon="🗝️")
 else:
-
-    # Create an OpenAI client.
     client = OpenAI(api_key=openai_api_key)
 
-    # Create a session state variable to store the chat messages. This ensures that the
-    # messages persist across reruns.
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    # ---------------------------
+    # 사용자 연령 선택
+    # ---------------------------
+    user_level = st.radio(
+        "📚 학습 대상 선택:",
+        ["초등학생", "중학생", "고등학생", "성인"],
+        horizontal=True
+    )
 
-    # Display the existing chat messages via `st.chat_message`.
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    # Create a chat input field to allow the user to enter a message. This will display
-    # automatically at the bottom of the page.
-    if prompt := st.chat_input("What is up?"):
-
-        # Store and display the current prompt.
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        # Generate a response using the OpenAI API.
-        stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
-            stream=True,
+    # ---------------------------
+    # 연령별 설명 스타일 프롬프트
+    # ---------------------------
+    if user_level == "초등학생":
+        system_prompt = (
+            "너는 초등학생에게 인공지능 개념을 재미있고 쉽게 설명하는 선생님이야. "
+            "예시와 비유를 사용하고, 어린이가 이해하기 쉬운 단어로 이야기해줘."
+        )
+    elif user_level == "중학생":
+        system_prompt = (
+            "너는 중학생에게 AI 개념을 친절하게 설명하는 선생님이야. "
+            "조금 더 구체적인 원리와 예시를 포함하고, 쉬운 전문용어도 사용해줘."
+        )
+    elif user_level == "고등학생":
+        system_prompt = (
+            "너는 고등학생에게 AI 기술을 체계적으로 설명하는 강사야. "
+            "기본 개념과 응용 사례를 논리적으로 설명해주고, 관련 진로나 학습 방법도 함께 알려줘."
+        )
+    else:  # 성인
+        system_prompt = (
+            "너는 성인 학습자에게 AI 기술과 활용법을 실무 중심으로 설명하는 전문가야. "
+            "AI 모델 구조, 활용 사례, 실습 방법 등을 단계적으로 안내해줘."
         )
 
-        # Stream the response to the chat using `st.write_stream`, then store it in 
-        # session state.
-        with st.chat_message("assistant"):
-            response = st.write_stream(stream)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+    # ---------------------------
+    # 세션 초기화
+    # ---------------------------
+    if "messages" not in st.session_state:
+        st.session_state.messages = [{]()_
